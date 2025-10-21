@@ -1,55 +1,42 @@
-from fastapi import FastAPI
-
-app=FastAPI()
-
-#without type validation
-@app.get("/products/{product_id}")
-async def get_product_by_id(product_id):
-    return {"Product_id":product_id}
-
-#with type validation
-@app.get("/products/{product_id}")
-async def get_product_by_id(product_id:int):
-    return {"Product_id":product_id}
-
-#using multiple path params
-@app.get("/users/{user_id}/posts/{post_id}")
-async def user_post(user_id: int, post_id: str):
-    return {"user_id": user_id, "post_id": post_id}
-
-#order of path parameters is necessary first should be fixed path and then dynamic path
-@app.get("/profiles/me")
-async def get_current_profile():
-    return {"profile": "current user"}
-
-@app.get("/profiles/{profile_id}")
-async def get_profile(profile_id: str):
-    return {"profile": profile_id}
-
-#path parameter with enum(restricting path params to certain values)
+from fastapi import FastAPI, Path
 from enum import Enum
-from fastapi import FastAPI
-
-class DeviceType(str, Enum):
-    phone = "phone"
-    tablet = "tablet"
-    laptop = "laptop"
 
 app = FastAPI()
 
-@app.get("/devices/{device_type}")
-async def get_device(device_type: DeviceType):
-    if device_type is DeviceType.phone:
-        return {"device_type": device_type, "message": "Mobile Device"}
-    if device_type.value == "tablet":
-        return {"device_type": device_type, "message": "Tablet Device"}
-    return {"device_type": device_type, "message": "Laptop Device"}
+#Basic path parameter
+@app.get("/items/{item_id}")
+def read_item(item_id: str):
+    return {"item_id": item_id}
 
-#path parameter accepting slash(path converter)
-from fastapi import FastAPI
+#Path parameter with type annotation and validation
+@app.get("/users/{user_id}")
+def get_user(user_id: int):
+    return {"user_id": user_id}
 
-app = FastAPI()
+#Enum for predefined values
+class CarBrand(str, Enum):
+    toyota = "toyota"
+    ford = "ford"
+    honda = "honda"
 
+@app.get("/cars/{brand}")
+def get_car(brand: CarBrand):
+    return {
+        "brand": brand.value
+    }
+
+#Path parameter containing paths (Starlette's :path converter)
 @app.get("/files/{file_path:path}")
-async def read_file_path(file_path: str):
+def read_file(file_path: str):
     return {"file_path": file_path}
+
+#Numeric validation with Path.Here the value must be between 1 and 1000
+@app.get("/products/{product_id}")
+def get_product(product_id: int = Path(ge=1, le=1000)):
+    return {"product_id": product_id}
+
+#Route order matters There will be a conflict with /users/{user_id} if this is not defined first. So, we have to define this route before the one with path parameter. 
+@app.get("/users/me")
+def get_current_user():
+    return {"user": "current"}
+
